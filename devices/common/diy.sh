@@ -14,6 +14,8 @@ sed -i '/	refresh_config();/d' scripts/feeds
 ./scripts/feeds install -a -p kiddin9 -f
 ./scripts/feeds install -a
 
+svn co https://github.com/openwrt/openwrt/trunk/package/kernel/mt76 package/feeds/kiddin9/mt76
+
 echo "$(date +"%s")" >version.date
 sed -i '/$(curdir)\/compile:/c\$(curdir)/compile: package/opkg/host/compile' package/Makefile
 sed -i 's/$(TARGET_DIR)) install/$(TARGET_DIR)) install --force-overwrite --force-depends/' package/Makefile
@@ -25,10 +27,13 @@ sed -i "s/procd-ujail//" include/target.mk
 sed -i "s/^.*vermagic$/\techo '1' > \$(LINUX_DIR)\/.vermagic/" include/kernel-defaults.mk
 
 status=$(curl -H "Authorization: token $REPO_TOKEN" -s "https://api.github.com/repos/kiddin9/openwrt-packages/actions/runs" | jq -r '.workflow_runs[0].status')
-while [ "$status" == "in_progress" ];do
+echo "$status"
+while [[ "$status" == "in_progress" || "$status" == "queued" ]];do
+	echo "wait 5s"
 	sleep 5
 	status=$(curl -H "Authorization: token $REPO_TOKEN" -s "https://api.github.com/repos/kiddin9/openwrt-packages/actions/runs" | jq -r '.workflow_runs[0].status')
 done
+
 
 mv -f feeds/kiddin9/r81* tmp/
 
@@ -50,6 +55,8 @@ sed -i 's/=bbr/=cubic/' package/kernel/linux/files/sysctl-tcp-bbr.conf
 sed -i 's/max_requests 3/max_requests 20/g' package/network/services/uhttpd/files/uhttpd.config
 #rm -rf ./feeds/packages/lang/{golang,node}
 sed -i "s/tty\(0\|1\)::askfirst/tty\1::respawn/g" target/linux/*/base-files/etc/inittab
+
+curl -sfL https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/package/libs/mbedtls/patches/200-Implements-AES-and-GCM-with-ARMv8-Crypto-Extensions.patch -o package/libs/mbedtls/patches/200-Implements-AES-and-GCM-with-ARMv8-Crypto-Extensions.patch
 
 date=`date +%m.%d.%Y`
 sed -i -e "/\(# \)\?REVISION:=/c\REVISION:=$date" -e '/VERSION_CODE:=/c\VERSION_CODE:=$(REVISION)' include/version.mk
