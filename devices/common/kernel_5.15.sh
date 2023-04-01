@@ -14,6 +14,8 @@ cd -
 
 sed -i "s/9 -Xe/extreme/" include/image.mk
 
+svn co https://github.com/openwrt/openwrt/trunk/package/kernel/mt76 package/feeds/kiddin9/mt76
+
 svn co https://github.com/openwrt/openwrt/trunk/package/network/services/hostapd  package/feeds/kiddin9/hostapd
 
 sed -i "s/^.*vermagic$/\techo '1' > \$(LINUX_DIR)\/.vermagic/" include/kernel-defaults.mk
